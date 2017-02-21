@@ -1,0 +1,297 @@
+---
+title: "Group Project"
+output: html_document
+---
+
+##The code below properly formats the msaCounty Data, which will be needed to add MSA codes to the other tables worked with:
+```{r}
+#Reads in the downloaded datasets:
+cancer <- read.csv(file='/Users/Tom/R/Group_Project/Data/lung_cancer_2016.csv',sep=',',header=T)
+pollution <- read.csv(file='/Users/Tom/R/Group_Project/Data/Pollution_annual_all_2014.csv',sep=',',header=T)
+msaCounty <- read.csv(file='/Users/Tom/R/Group_Project/Data/MSAandCounty.csv',sep=',',header=F,stringsAsFactors =FALSE)
+for(j in 1:nrow(msaCounty)){
+    msaCounty$V6[j] <- as.integer(msaCounty$V6[j])
+}
+
+#Makes integer values for county codes:
+for(j in 1:nrow(msaCounty)){
+    msaCounty$V4[j] <- as.integer(msaCounty$V4[j])
+}
+
+#Makes integer values for MSA codes:
+for(j in 1:nrow(msaCounty)){
+  if (is.na(msaCounty$V4[j])){
+    msaCounty$V4[j] <- 0
+  }
+}
+
+#Removes NA values and replaces themw with 0:
+for(j in 1:nrow(msaCounty)){
+  if (is.na(msaCounty$V6[j])){
+    msaCounty$V6[j] <- 0
+  }
+}
+
+#Replaces blank state names and county names with 0's:
+for(z in 1:nrow(msaCounty)){
+  if (msaCounty$V1[z]==""){
+    msaCounty$V1[z] <- "ZZ"
+  }
+    if (msaCounty$V6[z]==""){
+    msaCounty$V6[z] <- "ZZ"
+  }
+}
+
+#Adds state codes to MSACounty table:
+msaCounty$StateCode <-0
+StateCode <- read.csv(file='/Users/Tom/R/Group_Project/Data/national_county.csv',sep=',',header=T,stringsAsFactors =FALSE)
+
+#Makes integer values for county codes and state codes:
+for(j in 1:nrow(StateCode)){
+    StateCode$X1[j] <- as.integer(StateCode$X1[j])
+    StateCode$X1.1[j] <- as.integer(StateCode$X1.1[j])
+}
+
+#Add state codes to MSA county table:
+for(x in 1:nrow(StateCode)){
+  for(y in 1:nrow(msaCounty)){
+  if(msaCounty$V1[y]==StateCode$AL[x]){
+    msaCounty$StateCode[y] = StateCode$X1[x]
+  }
+  }
+}
+
+```
+
+##The first step was to add the conty codes to the cancer file with the associated MSA (metropolitan statistical area) codes:
+```{r, echo=FALSE}
+
+pollution$MSACode <-0
+
+#Add the appropriate MSA codes to the pollution table:
+for (i in 1:nrow(pollution)) {
+  for(j in 1:nrow(msaCounty)){
+    if (pollution$County.Code[i] == msaCounty$V6[j] && pollution$State.Code[i] ==msaCounty$StateCode[j]){
+      pollution$MSACode[i] <- msaCounty$V4[j]
+      
+      
+    }
+  }
+}
+
+#Due to issues with the dataset not all of the MSA's from the cancer data set will be in the pollution data set
+#The code below counts the number of MSA in the cancer data set that have a corresponding MSA in the pollution data frame:
+count =0
+for(j in 1:nrow(cancer)){
+  for (i in 1:nrow(pollution)) {
+    if(is.na(cancer$MSA.Code[j])){
+      break
+    }
+      if (cancer$MSA.Code[j]==pollution$MSACode[i]){
+        count = count +1
+        cat(count, " ")
+        break
+      }
+    
+  
+  }
+}
+
+#Outputs the new msaCounty county as a .csv (so I can take a break and close R):
+write.csv(msaCounty,file = "/Users/Tom/R/Group_Project/processed_tables/msaCountyModified.csv")
+
+#Outputs the new pollution as a .csv:
+write.csv(pollution,file = "/Users/Tom/R/Group_Project/processed_tables/pollutionModified.csv")
+
+```
+
+
+##The same process was repeated for data tables with individual pollutants. This was Ozone:
+```{r}
+
+msaCountyModified<- read.csv(file='/Users/Tom/R/Group_Project/processed_tables/msaCountyModified.csv',sep=',',header=T)
+Ozone <- read.csv(file='/Users/Tom/R/Group_Project/Data/pollutant/ozone_2010.csv',sep=',',header=T)
+
+#Adds a row for MSA Codes of the Ozone table:
+Ozone$MSACode <-0
+
+#Lets add MSA Codes to the Ozone table:
+for (i in 1:nrow(Ozone)) {
+    if(i%%6000 == 0){           #Adds a display progress indicator
+      cat((i/nrow(Ozone))*100,"%     ")
+    }
+  for(j in 1:nrow(msaCountyModified)){
+    if (Ozone$County.Code[i] == msaCountyModified$V6[j] && Ozone$State.Code[i] ==msaCountyModified$StateCode[j]){
+      Ozone$MSACode[i] <- msaCountyModified$V4[j]
+      
+    }
+   
+  }
+}
+
+#Saves as .csv file:
+write.csv(Ozone, file = "/Users/Tom/R/Group_Project/Data/pollutant/ozone_2010_Modified.csv")
+
+```
+
+##This was for So2:
+```{r}
+
+msaCountyModified<- read.csv(file='/Users/Tom/R/Group_Project/processed_tables/msaCountyModified.csv',sep=',',header=T)
+SO2 <- read.csv(file='/Users/Tom/R/Group_Project/Data/pollutant/SO2_2010.csv',sep=',',header=T)
+
+#Add a row for MSA Codes of the SO2 Table:
+SO2$MSACode <-0
+
+#Lets add MSA Codes to the SO2 Table:
+for (i in 177033:nrow(SO2)) {
+    if(i%%6000 == 0){           #Adds a display progress indicator
+      cat((i/nrow(SO2))*100,"%     ")
+    }
+  for(j in 1:nrow(msaCountyModified)){
+    if (SO2$County.Code[i] == msaCountyModified$V6[j] && SO2$State.Code[i] ==msaCountyModified$StateCode[j]){
+      SO2$MSACode[i] <- msaCountyModified$V4[j]
+      
+    }
+   
+  }
+}
+
+#Saves as .csv file:
+write.csv(SO2, file = "/Users/Tom/R/Group_Project/processed_tables/SO2_2010_Modified.csv")
+
+```
+
+##The next step was to subset the dataframe by MSA code, then to average the AQI for each county. 
+##Subsetting the pollution data:
+```{r}
+
+#Subset N2O dataset to include only the state code, county code, state name, county name, AQI value, and MSA code:
+subN2O <- c("State.Code", "County.Code", "State.Name", "County.Name","AQI","MSACode")
+subN2O <- N2O[subN2O]
+
+#Subset CO dataset to include only the state code, county code, state name, county name, AQI value, and MSA code: 
+subCO <- c("State.Code", "County.Code", "State.Name", "County.Name", "AQI","MSACode")
+subCO <- CO[subCO]
+
+#Subset Ozone dataset to include only the state code, county code, state name, county name, AQI value, and MSA code: 
+subOzone <- c("State.Code", "County.Code", "State.Name", "County.Name", "AQI","MSACode")
+subOzone <- Ozone[subOzone]
+
+```
+
+
+##Averaging AQI values:
+```{r}
+
+#Average N2O AQI value based on MSA code:
+N2Odata <- aggregate(subN2O["AQI"],by=list(subN2O$MSACode),mean,na.rm=TRUE)
+#Rename columns:
+colnames(N2Odata) <- c("MSACode", "AverageAQI")
+#Delete "Other" MSA codes (0 and 99999):
+N2Odata <- N2Odata[!(N2Odata$MSACode == 0),]
+N2Odata <- N2Odata[!(N2Odata$MSACode == 99999),]
+#Save N2Odata as .csv file:
+write.csv(N2Odata, file = "/Users/ceacoleman/Desktop/Project/N2Odata.csv")
+
+#Average CO AQI value based on MSA code:
+COdata <- aggregate(subCO["AQI"],by=list(subCO$MSACode),mean,na.rm=TRUE)
+#Rename columns:
+colnames(COdata) <- c("MSACode", "AverageAQI")
+#Delete "Other" MSA codes (0 and 99999):
+COdata <- COdata[!(COdata$MSACode == 0),]
+COdata <- COdata[!(COdata$MSACode == 99999),]
+#Save COdata as .csv file:
+write.csv(COdata, file = "/Users/ceacoleman/Desktop/Project/COdata.csv")
+
+#Average Ozone AQI value based on MSA code:
+Ozonedata <- aggregate(subOzone["AQI"],by=list(subOzone$MSACode),mean,na.rm=TRUE)
+#Rename columns:
+colnames(Ozonedata) <- c("MSACode", "AverageAQI")
+#Delete "Other" MSA codes (0 and 99999):
+Ozonedata <- Ozonedata[!(Ozonedata$MSACode == 0),]
+Ozonedata <- Ozonedata[!(Ozonedata$MSACode == 99999),]
+
+```
+
+The next step was to subset the ciggerette smoking data by county, and then add the MSA codes:
+```{r}
+
+CigSmokers<- read.csv(file='/Users/Tom/R/Group_Project/Data/Health.csv',sep=',',header=T)
+myvars <- c("State", "County", "STATECODE", "COUNTYCODE", "County", "Adult.smoking.Value")
+CigSmokersProper <- CigSmokers[myvars]
+
+write.csv(CigSmokersProper, file = "/Users/Tom/R/Group_Project/CigSmokersModified")
+
+#Adding MSA Codes to the cig:
+myvars <- c("V4", "V6", "StateCode")
+MsaCountyClean <- msaCountyModified[myvars]
+library(plyr)
+MSACountyUse <- rename(MsaCountyClean, c("V4"="MSACODE", "V6"="COUNTYCODE", "StateCode"="STATECODE"))
+CigSmokerMSA <- merge(CigSmokersProper,MSACountyUse,by=c("STATECODE","COUNTYCODE")) #Adds MSA Codes to the smoker data
+write.csv(CigSmokerMSA, file = "/Users/Tom/R/Group_Project/CigSmokersMSAUSEMEd")
+
+```
+
+
+##Then this data was used to map the smoking rates, and cancer rates by MSACODE onto the same table (called newTable):
+```{r}
+
+install.packages("mapproj")
+install.packages("ggmap")
+install.packages("DeducerSpatial")
+
+cigSmokersMe <-read.csv(file='/Users/Tom/R/Group_Project/CigSmokersMSAUSEMEd.csv',sep=',',header=T)
+myvars <- c("Age.Adjusted.Rate")
+cigSmokersMe <- cigSmokersMe[c("Adult.smoking.Value","MSACODE")]
+cigSmokersMeat <-cigSmokersMe[!(cigSmokersMe$MSACODE == 99999),] #removes all the 99999 values, because they dont accurately show the location
+#Average cigSmokersMeat adult smoking value by MSA code:
+cigSmokersMeat <- aggregate(cigSmokersMeat["Adult.smoking.Value"], by=list(cigSmokersMeat$MSACODE), mean, na.rm=TRUE)
+#Rename cigSmokersMeat columns:
+colnames(cigSmokersMeat) <- c("MSACODE", "Average adult smoking value")
+
+library(plyr)
+cancerModified <- rename(cancer, c("MSA.Code"="MSACODE"))
+cancerModified <- cancerModified[c("MSACODE", "Age.Adjusted.Rate")]
+newTable <- merge(cancerModified, cigSmokersMeat, by=c("MSACODE"))
+#newTable contains the cancer rate data, and ciggerate smoking rates, all based on MSA Code. 
+#The newTable will be used later on to generate a correlation table
+```
+
+
+##Adding pollutant data into the newTable:
+```{r}
+
+#ADD Ozoneto the newTable:
+newTable <- merge(newTable, Ozonedata,by=c("MSACODE"))
+
+#ADD NO2 to the newTable:
+newTable <- merge(newTable,N2Odata,by=c("MSACODE"))
+
+#ADD CO to the newTable:
+newTable <- merge(newTable,COdata,by=c("MSACODE"))
+```
+
+
+##Using newTable to create a correlation table, and then generating the corrplot:
+```{r}
+
+library(corrplot)
+cortable <- cor(newTable)
+colnames(cortable) = c("MSACODE", "Age Adjusted Cancer Rate", "Average Adult Smoking Rate", "N2O AQI", "OZONE AQI", "CO AQI")
+
+jpeg('PollutantCorrelation.jpg')
+corrplot(cortable, method = "number")
+dev.off()
+
+```
+
+##In conclusion:
+```{r}
+  There is a strong positive correlation between ciggeratte smoking and Age.Adjusted Cancer Rate.
+  There is a strong positive correlation between the presence of one pollutant and the presence of others.
+  The above two points are in line with what was expected.
+  A higher AQI means the air quality is worse. It was unexpected that a higher AQI would be negatively correlated with age adjusted cancer rate.
+
+```
+
