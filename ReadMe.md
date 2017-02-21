@@ -2,5 +2,5 @@ The goal of this project was to find the correlation between various air polluta
 
 The findings are summarized in the image below:
 
-![](https://github.com/BluEyedTree/FooGame/blob/master/GamePlay.jpg)
+![](https://github.com/BluEyedTree/LungCancerAndAirPollution/blob/master/PollutantCorrelation.jpg)
 
